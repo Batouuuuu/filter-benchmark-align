@@ -1,0 +1,22 @@
+common:
+  output_directory: data/filtered
+steps:
+- type: filter
+  parameters:
+    inputs:
+    - /home/batou/Documents/TAL/Master_2/projet/filter-benchmark-align/data/aligned/en.txt
+    - /home/batou/Documents/TAL/Master_2/projet/filter-benchmark-align/data/aligned/fr.txt
+    outputs:
+    - en.filtered.gz
+    - fr.filtered.gz
+    filters:
+    # - AlphabetRatioFilter:
+    #     threshold:
+    #     - 0.691402
+    #     - 0.684322
+    - LengthRatioFilter:
+        unit: word
+        name: word
+        threshold: 1.2
+    # - TerminalPunctuationFilter:
+    #     threshold: -1.011699

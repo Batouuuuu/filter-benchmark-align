@@ -1,0 +1,16 @@
+common:
+  output_directory: data/filtered_1.5
+steps:
+- parameters:
+    filters:
+    - LengthRatioFilter:
+        name: word
+        threshold: 1.5
+        unit: word
+    inputs:
+    - /home/batou/Documents/TAL/Master_2/projet/filter-benchmark-align/data/aligned/en.txt
+    - /home/batou/Documents/TAL/Master_2/projet/filter-benchmark-align/data/aligned/fr.txt
+    outputs:
+    - en.filtered.gz
+    - fr.filtered.gz
+  type: filter
