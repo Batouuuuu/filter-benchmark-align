@@ -1,16 +1,19 @@
 common:
-  output_directory: data/filtered_1.0
+  output_directory: data/filtered
 steps:
 - parameters:
     filters:
     - LengthRatioFilter:
         name: word
-        threshold: 1.0
+        threshold: 0.5
         unit: word
+    - LanguageIdFilter:
+        threshold:
+          language: en
     inputs:
     - /home/batou/Documents/TAL/Master_2/projet/filter-benchmark-align/data/aligned/en.txt
     - /home/batou/Documents/TAL/Master_2/projet/filter-benchmark-align/data/aligned/fr.txt
     outputs:
-    - en.filtered.gz
-    - fr.filtered.gz
+    - 'en_LengthRatioFilter_0.5_LanguageIdFilter_{''language'': ''en''}.filtered.gz'
+    - 'fr_LengthRatioFilter_0.5_LanguageIdFilter_{''language'': ''en''}.filtered.gz'
   type: filter
