@@ -1,5 +1,5 @@
 common:
-  output_directory: data/filtered
+  output_directory: ../data/filtered
 steps:
 - type: filter
   parameters:

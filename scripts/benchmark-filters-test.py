@@ -8,6 +8,8 @@ import os
 from typing import Dict, List, Union, Optional
 import subprocess
 import gzip
+import pandas as pd
+from sklearn.metrics import precision_score, recall_score, f1_score
 
 def load_data(source_file: str, transcription_file: str) -> list[tuple[str, str]]:
     """on charge nos données"""
@@ -30,23 +32,21 @@ def stringify_value(value):
     - {"languages": ["en", "fr"]} -> "languages_en_fr"
     """
     
-    # Si la valeur est un dictionnaire
+    ## si la valeur est un dictionnaire
     if isinstance(value, dict):
-        parts = []  # On stocke chaque morceau dans une liste
+        parts = []  
         for key, val in value.items():
-            # Si la valeur associée est une liste (par exemple ["en", "fr"])
             if isinstance(val, list):
-                val = "_".join(str(item) for item in val)  # On concatène tous les éléments de la liste avec "_"
+                val = "_".join(str(item) for item in val)   
             else:
-                val = str(val)  # Sinon, on convertit simplement la valeur en string
+                val = str(val)  
 
-            parts.append(f"{key}_{val}")  # On ajoute "clé_valeur" dans la liste parts
+            parts.append(f"{key}_{val}")  
         
-        return "_".join(parts)  # On concatène tous les morceaux ensemble avec "_"
+        return "_".join(parts)  
 
-    # Si ce n'est pas un dictionnaire (ex: juste un nombre, une string)
     else:
-        return str(value)  # On le convertit directement en string
+        return str(value)  
 
 
 
@@ -139,51 +139,66 @@ def run_opusfilter_on_configs(config_dir: str):
 def evaluate_filtered_data(original_pairs: list[tuple[str, str]], filtered_dir: str):
     """
     Évalue les performances des filtres en comparant les données originales aux données filtrées.
-
-    Args:
-        original_pairs (list): Liste de tuples (source, transcription).
-        filtered_dir (str): Dossier contenant les fichiers filtrés.
+    Calcule les métriques classiques : VP, FP, FN, VN, précision, rappel, F1.
     """
+    resultats = []
 
-    # Pour chaque fichier filtré généré
     for filename in os.listdir(filtered_dir):
         if filename.endswith(".filtered.gz") and filename.startswith("en_"):
-            # Déduire le nom de base pour retrouver aussi le fichier français
-            base_name = filename[3:-12]  # enlever "en_" et ".filtered.gz"
+            base_name = filename[3:-12]
             fr_file = os.path.join(filtered_dir, f"fr_{base_name}.filtered.gz")
             en_file = os.path.join(filtered_dir, f"en_{base_name}.filtered.gz")
 
-            # Lire les phrases filtrées
             with gzip.open(en_file, 'rt', encoding='utf-8') as en_f, \
                  gzip.open(fr_file, 'rt', encoding='utf-8') as fr_f:
-
                 en_sentences = [l.strip() for l in en_f]
                 fr_sentences = [l.strip() for l in fr_f]
-                filtered_pairs = list(zip(en_sentences, fr_sentences))
+                filtered_pairs = list(zip(fr_sentences, en_sentences))
 
-            # Faire une évaluation simple : combien de paires originales restent ?
-            original_set = set(original_pairs)
+            # original_set = set(original_pairs)
             filtered_set = set(filtered_pairs)
 
-            surviving_pairs = filtered_set & original_set  # paires correctes conservées
-            removed_pairs = original_set - filtered_set    # paires supprimées
+            y_true = []  
+            y_pred = [] 
 
-            print(f"=== Évaluation pour filtre {base_name} ===")
-            print(f"Nombre total de paires originales : {len(original_pairs)}")
-            print(f"Nombre de paires après filtrage : {len(filtered_pairs)}")
-            print(f"Paires originales conservées : {len(surviving_pairs)}")
-            print(f"Paires originales supprimées : {len(removed_pairs)}")
-            print("")
+            for pair in original_pairs:
+                y_true.append(1)  
+                y_pred.append(1 if pair in filtered_set else 0)
+
+            VP = sum((yt == 1 and yp == 1) for yt, yp in zip(y_true, y_pred))
+            FP = sum((yt == 0 and yp == 1) for yt, yp in zip(y_true, y_pred)) 
+            FN = sum((yt == 1 and yp == 0) for yt, yp in zip(y_true, y_pred))
+            VN = sum((yt == 0 and yp == 0) for yt, yp in zip(y_true, y_pred)) 
+
+            precision = precision_score(y_true, y_pred, zero_division=0)
+            recall = recall_score(y_true, y_pred, zero_division=0)
+            f1 = f1_score(y_true, y_pred, zero_division=0)
+
+            resultats.append({
+                "Combinaison de filtres": base_name,
+                "VP": VP,
+                "FP": FP,
+                "FN": FN,
+                "VN": VN,
+                "Précision": round(precision, 3),
+                "Rappel": round(recall, 3),
+                "F1-score": round(f1, 3),
+            })
+
+    
+    df = pd.DataFrame(resultats)
+    print(df.to_markdown(index=False))
+
 
 def main():
 
-    original_pairs = load_data('../data/aligned/fr.txt', '../data/aligned/en.txt')
+    original_pairs = load_data('../data/aligned/english/fr.txt', '../data/aligned/english/en.txt')
     generate_config(
     source_yaml="../data/settings_yaml/config.yaml",
     filters={
-        "LengthRatioFilter": [0.5, 1.0],
+        "LengthRatioFilter": [1.5],
         # "LanguageIdFilter": {"language": "en"},
-        "TerminalPunctuationFilter": {"languages": ["en", "fr"]}
+        # "TerminalPunctuationFilter": {"languages": ["en", "fr"]}
     }
 )
     run_opusfilter_on_configs("../data/settings_yaml/")  

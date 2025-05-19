@@ -1,2 +1,6 @@
+## for testing the filters
 pyyaml
 opusfilter
+tabulate
+scikit-learn
+
