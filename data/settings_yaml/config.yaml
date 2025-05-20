@@ -4,14 +4,15 @@ steps:
 - type: filter
   parameters:
     inputs:
-    - /home/batou/Documents/TAL/Master_2/projet/filter-benchmark-align/data/aligned/en.txt
-    - /home/batou/Documents/TAL/Master_2/projet/filter-benchmark-align/data/aligned/fr.txt
+    - ../aligned/spanish/es.txt        
+    - ../aligned/spanish/fr.txt
     outputs:
     - en.filtered.gz
-    - fr.filtered.gz
+    - fr.filtered.gz                                                         
     filters:
     - LengthRatioFilter:
         unit: word
         name: word
-        threshold: 1.2
+        threshold: 1.5
+
 
