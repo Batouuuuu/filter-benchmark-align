@@ -189,20 +189,45 @@ def evaluate_filtered_data(original_pairs: list[tuple[str, str]], filtered_dir: 
     df = pd.DataFrame(resultats)
     print(df.to_markdown(index=False))
 
+    log_rejected_pairs(original_pairs, filtered_pairs, base_name, filtered_dir)
+
+
+def log_rejected_pairs(original_pairs, filtered_pairs, base_name, output_dir, max_display=10):
+    """
+    Affiche et enregistre les paires rejetées par les filtres OpusFilter.
+    """
+
+    filtered_set = set(filtered_pairs)
+    rejected_pairs = [pair for pair in original_pairs if pair not in filtered_set]
+
+    print(f"\n--- Paires rejetées pour la config : {base_name} ---")
+    for i, (src, tgt) in enumerate(rejected_pairs[:max_display]):
+        print(f"[{i+1}] FR: {src} | ES: {tgt}")
+    print(f"Total rejetées : {len(rejected_pairs)}")
+
+   
+    rejected_file = os.path.join(output_dir, f"../rejected/spanish/rejected_{base_name}.tsv")
+    with open(rejected_file, "w", encoding="utf-8") as rej_f:
+        for src, tgt in rejected_pairs:
+            rej_f.write(f"{src}\t{tgt}\n")
+
+
 
 def main():
 
-    original_pairs = load_data('../data/aligned/english/fr.txt', '../data/aligned/english/en.txt')
+    original_pairs = load_data('../data/aligned/spanish/fr.txt', '../data/aligned/spanish/es.txt')
     generate_config(
     source_yaml="../data/settings_yaml/config.yaml",
     filters={
-        "LengthRatioFilter": [1.5],
+        "LengthRatioFilter": [1.8],
         # "LanguageIdFilter": {"language": "en"},
         # "TerminalPunctuationFilter": {"languages": ["en", "fr"]}
     }
 )
     run_opusfilter_on_configs("../data/settings_yaml/")  
     evaluate_filtered_data(original_pairs, "../data/filtered/")
+
+
     
 if __name__ == "__main__":
     main()
