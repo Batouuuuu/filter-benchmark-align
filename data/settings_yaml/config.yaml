@@ -7,7 +7,7 @@ steps:
     - ../aligned/spanish/es.txt        
     - ../aligned/spanish/fr.txt
     outputs:
-    - en.filtered.gz
+    - es.filtered.gz
     - fr.filtered.gz                                                         
     filters:
     - LengthRatioFilter:
