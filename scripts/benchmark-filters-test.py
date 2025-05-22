@@ -65,7 +65,7 @@ def generate_config(source_yaml : str, output_dir: str = "../data/settings_yaml/
     if filters is None:
         filters = {} 
     
-    ## charger la configuration de base (suit la structure d'un fichier yaml interprétable par opusfilter)
+    ## charge base configuration following a yaml syntax
     with open(source_yaml, 'r') as f:
         base_config = yaml.safe_load(f)
 
@@ -87,7 +87,7 @@ def generate_config(source_yaml : str, output_dir: str = "../data/settings_yaml/
             filter_name_parts.append(f"{filter_type}_{stringify_value(value)}")
 
 
-            ## cas particulier pour LengthRatioFilter
+            ## Lengths filters
             if filter_type == "LengthRatioFilter":
                 new_config['steps'][0]['parameters']['filters'].append({
                     filter_type: {
@@ -96,6 +96,40 @@ def generate_config(source_yaml : str, output_dir: str = "../data/settings_yaml/
                         "unit": "word"
                     }
                 })
+
+            elif filter_type == "LengthFilter":
+                new_config['steps'][0]['parameters']['filters'].append({
+                    filter_type: {
+                        "min_length": value,
+                        "unit": "word",
+                    }
+                })
+
+            ##Language ID filter
+
+            elif filter_type == "LanguageIDFilter":
+                 new_config['steps'][0]['parameters']['filters'].append({
+                    filter_type: {
+                        "languages": ["fr", "es"],       
+                            "id_method": "fasttext", ## fasttext library required       
+                            "thresholds": [0.5, 0.5], 
+                            "fasttext_model_path": "../models/lid.176.ftz" ## path to the model used 
+                      
+                    }
+                })
+
+            elif filter_type == "CharacterScoreFilter":
+               new_config['steps'][0]['parameters']['filters'].append({
+                    filter_type: {
+                        "scripts": ["Latin"],
+                        "thresholds": [value]
+                    }
+               })
+               
+               
+
+               
+
             else:
                 new_config['steps'][0]['parameters']['filters'].append({
                     filter_type: value if isinstance(value, dict) else {"threshold": value}
@@ -205,6 +239,10 @@ def log_rejected_pairs(original_pairs, filtered_pairs, base_name, output_dir, ma
         print(f"[{i+1}] FR: {src} | ES: {tgt}")
     print(f"Total rejetées : {len(rejected_pairs)}")
 
+    # for i, (src, tgt) in enumerate(rejected_pairs[:10]):
+    #     ratio = max(len(src), len(tgt)) / max(1, min(len(src), len(tgt)))
+    #     print(f"[{i+1}] FR: {src} | ES: {tgt} | Ratio: {ratio:.2f}")
+
    
     rejected_file = os.path.join(output_dir, f"../rejected/spanish/rejected_{base_name}.tsv")
     with open(rejected_file, "w", encoding="utf-8") as rej_f:
@@ -219,8 +257,11 @@ def main():
     generate_config(
     source_yaml="../data/settings_yaml/config.yaml",
     filters={
-        "LengthRatioFilter": [1.8],
-        # "LanguageIdFilter": {"language": "en"},
+        # "LengthRatioFilter": [1.84],
+        # "LengthFilter": [1],
+        # "LanguageIDFilter": [None],
+        "CharacterScoreFilter": [1]
+  
         # "TerminalPunctuationFilter": {"languages": ["en", "fr"]}
     }
 )
