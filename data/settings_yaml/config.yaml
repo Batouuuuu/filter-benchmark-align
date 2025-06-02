@@ -4,11 +4,11 @@ steps:
 - type: filter
   parameters:
     inputs:
-    - ../aligned/spanish/es.txt        
-    - ../aligned/spanish/fr.txt
+    - ../aligned/spanish/fr.txt        
+    - ../aligned/spanish/es.txt
     outputs:
-    - es.filtered.gz
-    - fr.filtered.gz                                                         
+    - fr.filtered.gz
+    - es.filtered.gz                                                         
     filters:
     - LengthRatioFilter:
         unit: word

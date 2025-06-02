@@ -110,10 +110,10 @@ def generate_config(source_yaml : str, output_dir: str = "../data/settings_yaml/
             elif filter_type == "LanguageIDFilter":
                  new_config['steps'][0]['parameters']['filters'].append({
                     filter_type: {
-                        "languages": ["fr", "es"],       
+                        "languages": ["es", "fr"],       
                             "id_method": "fasttext", ## fasttext library required       
-                            "thresholds": [0.5, 0.5], 
-                            "fasttext_model_path": "../models/lid.176.ftz" ## path to the model used 
+                            "thresholds": [0.7, 0.7], 
+                            "fasttext_model_path": "../models/lid.176.ftz"  
                       
                     }
                 })
@@ -121,12 +121,22 @@ def generate_config(source_yaml : str, output_dir: str = "../data/settings_yaml/
             elif filter_type == "CharacterScoreFilter":
                new_config['steps'][0]['parameters']['filters'].append({
                     filter_type: {
-                        "scripts": ["Latin"],
-                        "thresholds": [value]
+                        "scripts": ["Latin", "Latin"],
+                        "thresholds": [value, value]
                     }
                })
                
                
+            elif filter_type == "WordAlignFilter":
+                new_config['steps'][0]['parameters']['filters'].append({
+                    filter_type: {
+                        "src_threshold": value,
+                        "tgt_threshold": value,
+                        "src_tokenizer": ["moses", "fr"], 
+                        "tgt_tokenizer": ["moses", "es"], 
+                        "model": 3  ## eflomal
+                    }
+                })
 
                
 
@@ -253,16 +263,16 @@ def log_rejected_pairs(original_pairs, filtered_pairs, base_name, output_dir, ma
 
 def main():
 
-    original_pairs = load_data('../data/aligned/spanish/fr.txt', '../data/aligned/spanish/es.txt')
+    original_pairs = load_data('../data/aligned/spanish/es.txt', '../data/aligned/spanish/fr.txt') 
     generate_config(
     source_yaml="../data/settings_yaml/config.yaml",
     filters={
         # "LengthRatioFilter": [1.84],
-        # "LengthFilter": [1],
-        # "LanguageIDFilter": [None],
-        "CharacterScoreFilter": [1]
-  
-        # "TerminalPunctuationFilter": {"languages": ["en", "fr"]}
+        #"LengthFilter": [1],
+        #"LanguageIDFilter": [None],
+        #"CharacterScoreFilter": [1],
+        #"TerminalPunctuationFilter": {"languages": ["es", "fr"]}
+        "WordAlignFilter": [0.2]
     }
 )
     run_opusfilter_on_configs("../data/settings_yaml/")  
