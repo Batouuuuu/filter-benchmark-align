@@ -1,9 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Particles from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
 import { tsParticles } from "@tsparticles/engine";
+import DragDrop from "./DropZone";
 
 export default function App() {
+  const [fileFR, setFileFR] = useState<File | null>(null);
+  const [fileEN, setFileEN] = useState<File | null>(null);
   useEffect(() => {
     async function load() {
       await loadSlim(tsParticles);
@@ -65,11 +68,11 @@ export default function App() {
               <select
                 name="language"
                 id="language-select"
-                className="rounded px-3 py-1 text-black"
+                className="rounded px-3 py-1 text-black bg-white"
               >
-                <option value="fr-en">FR / EN</option>
-                <option value="fr-es">FR / ES</option>
-                <option value="fr-ar">FR / AR</option>
+                <option value="fr-en">🇫🇷 / 🇬🇧</option>
+                <option value="fr-es">🇫🇷 / 🇪🇸</option>
+                <option value="fr-ar">🇫🇷 / 🇸🇦</option>
               </select>
             </div>
 
@@ -77,29 +80,21 @@ export default function App() {
             <hr className="border-t border-white/40 mt-2 w-full" />
           </div>
         </div>
+        {/* used the componant DragDrop from the dropzone */}
+        <div className="flex items-stretch h-48 w-35 ">
+          <DragDrop
+            file={fileFR}
+            setFile={setFileFR}
+            label="Select your FR file or drag and drop it"
+          />
+          <div className="h-15 w-px bg-white/40 mx-2"></div>
+          <DragDrop
+            file={fileEN}
+            setFile={setFileEN}
+            label="Select your EN file or drag and drop it"
+          />
+        </div>
 
-        {/* files conteners */}
-        <div className="w-1/2 flex justify-center">
-          <label className="flex items-center gap-2 px-4 py-2 text-sm text-white backdrop-blur-md cursor-pointer hover:bg-white/20 transition rounded">
-            <span>Choose File</span>
-            <input
-              type="file"
-              onChange={(e) => console.log(e.target.files?.[0])}
-              className="hidden"
-            />
-          </label>
-        </div>
-        <div className="h-3/5 w-px bg-white/40 mx-2"></div>
-        <div className="w-1/2 flex justify-center">
-          <label className="flex items-center gap-2 px-4 py-2 text-sm text-white backdrop-blur-md cursor-pointer hover:bg-white/20 transition rounded">
-            <span>Choose File</span>
-            <input
-              type="file"
-              onChange={(e) => console.log(e.target.files?.[0])}
-              className="hidden"
-            />
-          </label>
-        </div>
         <div className="absolute bottom-6 left-0 right-0 flex justify-center">
           <button
             type="submit"
@@ -111,25 +106,4 @@ export default function App() {
       </div>
     </div>
   );
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-          <button onClick={() => {
-            setCount(count => count + 1);
-            setCount(count => count + 1);}}>
-          Double +1
-        </button>
-        <h2>  {count}</h2>
- 
-      </div>    
-    </>
-  )
 }
