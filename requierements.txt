@@ -1,6 +1,11 @@
-## for testing the filters
-pyyaml
+## for running test benchmark with filters
+PyYAML
+pandas
 opusfilter
 tabulate
 scikit-learn
+
+## backend
+fastapi
+python-multipart
 

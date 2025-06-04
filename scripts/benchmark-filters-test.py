@@ -268,10 +268,10 @@ def main():
     source_yaml="../data/settings_yaml/config.yaml",
     filters={
         # "LengthRatioFilter": [1.84],
-        #"LengthFilter": [1],
-        #"LanguageIDFilter": [None],
-        #"CharacterScoreFilter": [1],
-        #"TerminalPunctuationFilter": {"languages": ["es", "fr"]}
+        # "LengthFilter": [1],
+        # "LanguageIDFilter": [None],
+        # "CharacterScoreFilter": [1],
+        # "TerminalPunctuationFilter": {"languages": ["es", "fr"]}
         "WordAlignFilter": [0.2]
     }
 )
@@ -282,12 +282,3 @@ def main():
     
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-    
-
-

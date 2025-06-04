@@ -7,6 +7,7 @@ import DragDrop from "./DropZone";
 export default function App() {
   const [fileFR, setFileFR] = useState<File | null>(null);
   const [fileEN, setFileEN] = useState<File | null>(null);
+  const [showModal, setShowModal] = useState(false);
   useEffect(() => {
     async function load() {
       await loadSlim(tsParticles);
@@ -98,12 +99,29 @@ export default function App() {
         <div className="absolute bottom-6 left-0 right-0 flex justify-center">
           <button
             type="submit"
+            onClick={() => setShowModal(true)}
             className="min-w-[200px] px-6 py-2 bg-white bg-opacity-20 text-white-400 rounded hover:bg-opacity-40 transition"
           >
             Compare
           </button>
         </div>
       </div>
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-[#d4d4d3] rounded-lg p-6 w-[90%] max-w-lg max-h-[90vh] text-center shadow-lg overflow-y-auto">
+            <h2 className="text-xl font-semibold mb-4">Analyse en cours</h2>
+            <p className="mb-4">
+              Nous comparons vos fichiers. Veuillez patienter...
+            </p>
+            <button
+              onClick={() => setShowModal(false)}
+              className="mt-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
