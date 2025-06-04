@@ -84,7 +84,7 @@ def generate_config(source_yaml : str, output_dir: str = "../data/settings_yaml/
 
         for idx, (filter_type, _) in enumerate(filter_items):
             value = combination[idx]
-            filter_name_parts.append(f"{filter_type}_{stringify_value(value)}")
+            filter_name_parts.append(filter_type)
 
 
             ## Lengths filters
@@ -107,16 +107,20 @@ def generate_config(source_yaml : str, output_dir: str = "../data/settings_yaml/
 
             ##Language ID filter
 
-            elif filter_type == "LanguageIDFilter":
-                 new_config['steps'][0]['parameters']['filters'].append({
-                    filter_type: {
-                        "languages": ["es", "fr"],       
-                            "id_method": "fasttext", ## fasttext library required       
-                            "thresholds": [0.7, 0.7], 
-                            "fasttext_model_path": "../models/lid.176.ftz"  
-                      
-                    }
+            elif filter_type == "LanguageIDFilter" and value:
+                # Si value est un dict, on l’utilise ; sinon on met une valeur par défaut
+                params = value if isinstance(value, dict) else {
+                    "languages": ["fr", "es"],
+                    "id_method": "fasttext",
+                    "thresholds": [0.7, 0.7],
+                    "fasttext_model_path": "../models/lid.176.ftz"
+                }
+
+                new_config['steps'][0]['parameters']['filters'].append({
+                    filter_type: params
                 })
+
+
 
             elif filter_type == "CharacterScoreFilter":
                new_config['steps'][0]['parameters']['filters'].append({
@@ -148,9 +152,10 @@ def generate_config(source_yaml : str, output_dir: str = "../data/settings_yaml/
         
         filter_str = "_".join(filter_name_parts)
         new_config['steps'][0]['parameters']['outputs'] = [
-            f"en_{filter_str}.filtered.gz",
-            f"fr_{filter_str}.filtered.gz"
+            f"fr_{filter_str}.filtered.gz",
+            f"es_{filter_str}.filtered.gz"
         ]
+
 
         output_path = os.path.join(output_dir, f"config_{filter_str}.yaml")
         with open(output_path, "w", encoding="utf-8") as f_out:
@@ -188,16 +193,17 @@ def evaluate_filtered_data(original_pairs: list[tuple[str, str]], filtered_dir: 
     resultats = []
 
     for filename in os.listdir(filtered_dir):
-        if filename.endswith(".filtered.gz") and filename.startswith("en_"):
+        if filename.endswith(".filtered.gz") and filename.startswith("fr_"):
             base_name = filename[3:-12]
             fr_file = os.path.join(filtered_dir, f"fr_{base_name}.filtered.gz")
-            en_file = os.path.join(filtered_dir, f"en_{base_name}.filtered.gz")
+            es_file = os.path.join(filtered_dir, f"es_{base_name}.filtered.gz")
 
-            with gzip.open(en_file, 'rt', encoding='utf-8') as en_f, \
-                 gzip.open(fr_file, 'rt', encoding='utf-8') as fr_f:
-                en_sentences = [l.strip() for l in en_f]
-                fr_sentences = [l.strip() for l in fr_f]
-                filtered_pairs = list(zip(fr_sentences, en_sentences))
+            with gzip.open(fr_file, 'rt', encoding='utf-8') as fr_f, \
+                 gzip.open(es_file, 'rt', encoding='utf-8') as es_f:
+                 fr_sentences = [l.strip() for l in fr_f]
+                 es_sentences = [l.strip() for l in es_f]
+                 filtered_pairs = list(zip(fr_sentences, es_sentences))
+
 
             # original_set = set(original_pairs)
             filtered_set = set(filtered_pairs)
@@ -262,21 +268,27 @@ def log_rejected_pairs(original_pairs, filtered_pairs, base_name, output_dir, ma
 
 
 def main():
+    # On charge les données, puis on inverse chaque paire pour avoir (FR, ES)
+    original_pairs = [(fr, es) for es, fr in load_data('../data/aligned/spanish/es.txt', '../data/aligned/spanish/fr.txt')]
 
-    original_pairs = load_data('../data/aligned/spanish/es.txt', '../data/aligned/spanish/fr.txt') 
     generate_config(
-    source_yaml="../data/settings_yaml/config.yaml",
-    filters={
-        # "LengthRatioFilter": [1.84],
-        # "LengthFilter": [1],
-        # "LanguageIDFilter": [None],
-        # "CharacterScoreFilter": [1],
-        # "TerminalPunctuationFilter": {"languages": ["es", "fr"]}
-        "WordAlignFilter": [0.2]
-    }
-)
-    run_opusfilter_on_configs("../data/settings_yaml/")  
+        source_yaml="../data/settings_yaml/config.yaml",
+        filters={
+            # Exemple : tu peux réactiver d'autres filtres ici si tu veux tester plusieurs à la fois
+            "LanguageIDFilter": [
+                {
+                    "languages": ["fr", "es"],
+                    "thresholds": [0.7, 0.7],
+                    "id_method": "fasttext",
+                    "fasttext_model_path": "../models/lid.176.ftz"
+                },
+            ],
+        }
+    )
+
+    run_opusfilter_on_configs("../data/settings_yaml/")
     evaluate_filtered_data(original_pairs, "../data/filtered/")
+
 
 
     
