@@ -8,7 +8,7 @@ steps:
     - ../aligned/spanish/es.txt
     outputs:
     - fr.filtered.gz
-    - es.filtered.gz                                                         
+    - es.filtered.gz                            
     filters:
     - LengthRatioFilter:
         unit: word
