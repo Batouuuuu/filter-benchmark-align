@@ -8,6 +8,29 @@ export default function App() {
   const [fileFR, setFileFR] = useState<File | null>(null);
   const [fileEN, setFileEN] = useState<File | null>(null);
   const [showModal, setShowModal] = useState(false);
+
+  const handleSubmit = () => {
+    if (!fileFR || !fileEN) {
+      alert("Thanks to select two files");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("file_src", fileFR);
+    formData.append("file_target", fileEN);
+
+    for (const [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
+    // send to the backend
+    fetch("http://localhost:8000/files", {
+      method: "POST",
+      body: formData,
+    });
+
+    setShowModal(true);
+  };
+
+  // used for particles effect library
   useEffect(() => {
     async function load() {
       await loadSlim(tsParticles);
@@ -99,7 +122,7 @@ export default function App() {
         <div className="absolute bottom-6 left-0 right-0 flex justify-center">
           <button
             type="submit"
-            onClick={() => setShowModal(true)}
+            onClick={handleSubmit} // call submit fuction
             className="min-w-[200px] px-6 py-2 bg-white bg-opacity-20 text-white-400 rounded hover:bg-opacity-40 transition"
           >
             Compare

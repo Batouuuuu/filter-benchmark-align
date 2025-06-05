@@ -9,3 +9,5 @@ scikit-learn
 fastapi
 python-multipart
 
+setuptools ## for the setup.py
+

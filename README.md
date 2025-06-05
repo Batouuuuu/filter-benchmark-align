@@ -37,10 +37,10 @@ cd ..
 pip install -r requirements.txt
 ```
 
-### 2. Run the backend (Fastapi)
+### 2. Run the backend (go to the root of the project)
 
 ```
-uvicorn app.main:app
+uvicorn backend.app.main:app --reload
 ```
 
 ### 3. Install Node.js dependencies
