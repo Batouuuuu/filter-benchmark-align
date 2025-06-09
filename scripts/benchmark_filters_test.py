@@ -11,6 +11,19 @@ import gzip
 import pandas as pd
 from sklearn.metrics import precision_score, recall_score, f1_score
 
+def find_project_root(marker="data"):
+    """Remonte l'arborescence jusqu'à trouver un dossier racine identifiable (ex: 'data/')"""
+    path = os.path.abspath(__file__)
+    while True:
+        path = os.path.dirname(path)
+        if os.path.isdir(os.path.join(path, marker)):
+            return path
+        if path == "/":
+            raise RuntimeError(f"Impossible de trouver le dossier racine contenant '{marker}'")
+
+PROJECT_ROOT = find_project_root()
+
+
 def load_data(source_file: str, transcription_file: str) -> list[tuple[str, str]]:
     """on charge nos données"""
 
@@ -262,23 +275,32 @@ def log_rejected_pairs(original_pairs, filtered_pairs, base_name, output_dir, ma
 
 
 def main():
+    # PROJECT_ROOT est déjà défini plus haut par find_project_root()
 
-    original_pairs = load_data('../data/aligned/spanish/es.txt', '../data/aligned/spanish/fr.txt') 
-    generate_config(
-    source_yaml="../data/settings_yaml/config.yaml",
-    filters={
-        # "LengthRatioFilter": [1.84],
-        # "LengthFilter": [1],
-        # "LanguageIDFilter": [None],
-        # "CharacterScoreFilter": [1],
-        # "TerminalPunctuationFilter": {"languages": ["es", "fr"]}
-        "WordAlignFilter": [0.2]
+    # Chemins vers les fichiers de données
+    es_path = os.path.join(PROJECT_ROOT, "data", "aligned", "spanish", "es.txt")
+    fr_path = os.path.join(PROJECT_ROOT, "data", "aligned", "spanish", "fr.txt")
+    source_yaml = os.path.join(PROJECT_ROOT, "data", "settings_yaml", "config.yaml")
+    settings_dir = os.path.join(PROJECT_ROOT, "data", "settings_yaml")
+    filtered_dir = os.path.join(PROJECT_ROOT, "data", "filtered")
+
+    # Charge les paires originales
+    original_pairs = load_data(es_path, fr_path)
+
+    # Filtres à appliquer
+    filters_to_test = {
+        "WordAlignFilter": [0.2],
+        "LengthRatioFilter": [1.8],
+        "CharacterScoreFilter": [0.9],
+        "TerminalPunctuationFilter": {"languages": ["es", "fr"]},
+        "LengthFilter": [2]
     }
-)
-    run_opusfilter_on_configs("../data/settings_yaml/")  
-    evaluate_filtered_data(original_pairs, "../data/filtered/")
+
+    # Génère les fichiers de config et lance l’évaluation
+    generate_config(source_yaml=source_yaml, output_dir=settings_dir, filters=filters_to_test)
+    run_opusfilter_on_configs(settings_dir)
+    evaluate_filtered_data(original_pairs, filtered_dir)
 
 
-    
 if __name__ == "__main__":
     main()
