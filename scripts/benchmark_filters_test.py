@@ -11,6 +11,9 @@ import gzip
 import pandas as pd
 from sklearn.metrics import precision_score, recall_score, f1_score
 
+
+
+
 def find_project_root(marker="data"):
     """Remonte l'arborescence jusqu'à trouver un dossier racine identifiable (ex: 'data/')"""
     path = os.path.abspath(__file__)
@@ -21,7 +24,7 @@ def find_project_root(marker="data"):
         if path == "/":
             raise RuntimeError(f"Impossible de trouver le dossier racine contenant '{marker}'")
 
-PROJECT_ROOT = find_project_root()
+
 
 
 def load_data(source_file: str, transcription_file: str) -> list[tuple[str, str]]:
@@ -64,9 +67,10 @@ def stringify_value(value):
 
 
 
-def generate_config(source_yaml : str, output_dir: str = "../data/settings_yaml/",
-    filters: Optional[Dict[str, Union[List, Dict]]] = None
-) -> None:
+def generate_config( source_yaml: str,output_dir: str = "./data/settings_yaml/",
+                    filtered_dir: str = "./data/filtered",
+                    filters: Optional[Dict[str, Union[List, Dict]]] = None) -> None:
+    
     """Génération automatique des fichiers yaml avec les filtres d'opusfilters que l'on souhaite
     
      Args:
@@ -160,17 +164,19 @@ def generate_config(source_yaml : str, output_dir: str = "../data/settings_yaml/
 
         
         filter_str = "_".join(filter_name_parts)
+
         new_config['steps'][0]['parameters']['outputs'] = [
             f"en_{filter_str}.filtered.gz",
             f"fr_{filter_str}.filtered.gz"
         ]
 
         output_path = os.path.join(output_dir, f"config_{filter_str}.yaml")
+        new_config['common'] = {'output_directory': os.path.abspath(filtered_dir)}
+
         with open(output_path, "w", encoding="utf-8") as f_out:
             yaml.safe_dump(new_config, f_out, default_flow_style=False)
 
         print(f"Fichier généré : {output_path}")
-
 
 
 
@@ -212,7 +218,7 @@ def evaluate_filtered_data(original_pairs: list[tuple[str, str]], filtered_dir: 
                 fr_sentences = [l.strip() for l in fr_f]
                 filtered_pairs = list(zip(fr_sentences, en_sentences))
 
-            # original_set = set(original_pairs)
+           
             filtered_set = set(filtered_pairs)
 
             y_true = []  
@@ -241,12 +247,12 @@ def evaluate_filtered_data(original_pairs: list[tuple[str, str]], filtered_dir: 
                 "Rappel": round(recall, 3),
                 "F1-score": round(f1, 3),
             })
+            log_rejected_pairs(original_pairs, filtered_pairs, base_name, filtered_dir)
 
     
     df = pd.DataFrame(resultats)
     print(df.to_markdown(index=False))
 
-    log_rejected_pairs(original_pairs, filtered_pairs, base_name, filtered_dir)
 
 
 def log_rejected_pairs(original_pairs, filtered_pairs, base_name, output_dir, max_display=10):
@@ -262,10 +268,6 @@ def log_rejected_pairs(original_pairs, filtered_pairs, base_name, output_dir, ma
         print(f"[{i+1}] FR: {src} | ES: {tgt}")
     print(f"Total rejetées : {len(rejected_pairs)}")
 
-    # for i, (src, tgt) in enumerate(rejected_pairs[:10]):
-    #     ratio = max(len(src), len(tgt)) / max(1, min(len(src), len(tgt)))
-    #     print(f"[{i+1}] FR: {src} | ES: {tgt} | Ratio: {ratio:.2f}")
-
    
     rejected_file = os.path.join(output_dir, f"../rejected/spanish/rejected_{base_name}.tsv")
     with open(rejected_file, "w", encoding="utf-8") as rej_f:
@@ -275,31 +277,27 @@ def log_rejected_pairs(original_pairs, filtered_pairs, base_name, output_dir, ma
 
 
 def main():
-    # PROJECT_ROOT est déjà défini plus haut par find_project_root()
-
-    # Chemins vers les fichiers de données
+    PROJECT_ROOT = find_project_root()
     es_path = os.path.join(PROJECT_ROOT, "data", "aligned", "spanish", "es.txt")
     fr_path = os.path.join(PROJECT_ROOT, "data", "aligned", "spanish", "fr.txt")
     source_yaml = os.path.join(PROJECT_ROOT, "data", "settings_yaml", "config.yaml")
     settings_dir = os.path.join(PROJECT_ROOT, "data", "settings_yaml")
     filtered_dir = os.path.join(PROJECT_ROOT, "data", "filtered")
 
-    # Charge les paires originales
-    original_pairs = load_data(es_path, fr_path)
 
-    # Filtres à appliquer
+    original_pairs = load_data(es_path, fr_path)
     filters_to_test = {
-        "WordAlignFilter": [0.2],
+        #‡"WordAlignFilter": [0.2],
         "LengthRatioFilter": [1.8],
         "CharacterScoreFilter": [0.9],
         "TerminalPunctuationFilter": {"languages": ["es", "fr"]},
         "LengthFilter": [2]
     }
 
-    # Génère les fichiers de config et lance l’évaluation
-    generate_config(source_yaml=source_yaml, output_dir=settings_dir, filters=filters_to_test)
+    generate_config(source_yaml=source_yaml,output_dir=settings_dir,filtered_dir=filtered_dir,filters=filters_to_test)
     run_opusfilter_on_configs(settings_dir)
     evaluate_filtered_data(original_pairs, filtered_dir)
+
 
 
 if __name__ == "__main__":

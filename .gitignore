@@ -2,3 +2,5 @@ filter-align
 __pycache__/
 backend/filter-align/
 .vscode
+venv
+OpusFilter/
