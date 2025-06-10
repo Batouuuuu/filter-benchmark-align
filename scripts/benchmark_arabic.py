@@ -100,7 +100,7 @@ def evaluate_filtered_data(original_pairs, filtered_dir, src_lang, tgt_lang, rej
             tgt_file = os.path.join(filtered_dir, f"{tgt_lang}_{base_name}.filtered.gz")
 
             if not os.path.exists(src_file) or not os.path.exists(tgt_file):
-                print(f"⛔ Fichiers manquants pour {base_name} – ignoré.")
+                print(f" Fichiers manquants pour {base_name} – ignoré.")
                 continue
 
             with gzip.open(src_file, 'rt', encoding='utf-8') as sf, gzip.open(tgt_file, 'rt', encoding='utf-8') as tf:
@@ -133,6 +133,12 @@ def evaluate_filtered_data(original_pairs, filtered_dir, src_lang, tgt_lang, rej
 
     print("\nRésultats d’évaluation :")
     print(pd.DataFrame(resultats).to_markdown(index=False))
+    return resultats
+
+def save_results_csv(results, path):
+    df = pd.DataFrame(results)
+    df.to_csv(path, index=False, encoding="utf-8")
+    print(f"\nTous les résultats sont sauvegardés dans {path}")
 
 def benchmark_all():
     base_path = "/mnt/c/Users/soumia.daas/ar_fr_filter/filter-benchmark-align"
@@ -141,6 +147,32 @@ def benchmark_all():
     filtered_dir = os.path.join(base_path, "data/filtered")
 
     benchmarks = [
+        {
+            "name": "fr_ar_base",
+            "src_file": "data/aligned/arabe_fr/fr.txt",
+            "tgt_file": "data/aligned/arabe_fr/ar.txt",
+            "src_lang": "fr",
+            "tgt_lang": "ar",
+            "filters": {
+                "LengthRatioFilter": [2.0],
+                "TerminalPunctuationFilter": {"languages": ["fr", "ar"]},
+                "CharacterScoreFilter": [0.6],
+                "LanguageIDFilter": [None]
+            }
+        },
+        {
+            "name": "fr_ar_base_disaligned",
+            "src_file": "data/none_aligned/arabe_fr/fr.txt",
+            "tgt_file": "data/none_aligned/arabe_fr/ar.txt",
+            "src_lang": "fr",
+            "tgt_lang": "ar",
+            "filters": {
+                "LengthRatioFilter": [2.0],
+                "TerminalPunctuationFilter": {"languages": ["fr", "ar"]},
+                "CharacterScoreFilter": [0.6],
+                "LanguageIDFilter": [None]
+            }
+        },
         {
             "name": "fr_ar",
             "src_file": "data/aligned/arabe_fr/Tatoeba.ar-fr.fr",
@@ -191,6 +223,7 @@ def benchmark_all():
         }
     ]
 
+    all_results = []
     for bench in benchmarks:
         print(f"\n=== Benchmarking {bench['name']} ===")
         src_path = os.path.join(base_path, bench['src_file'])
@@ -208,13 +241,18 @@ def benchmark_all():
         )
         os.makedirs(filtered_dir, exist_ok=True)
         run_opusfilter_on_configs(settings_dir)
-        evaluate_filtered_data(
+        res = evaluate_filtered_data(
             original_pairs,
             filtered_dir,
             bench['src_lang'],
             bench['tgt_lang'],
             os.path.join(base_path, f"rejected/{bench['name']}")
         )
+        for r in res:
+            r["Benchmark"] = bench["name"]
+            all_results.append(r)
+
+    save_results_csv(all_results, os.path.join(base_path, "all_benchmark_results.csv"))
 
 if __name__ == "__main__":
     benchmark_all()

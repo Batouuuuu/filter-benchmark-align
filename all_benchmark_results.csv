@@ -1,0 +1,7 @@
+Filtres,VP,FP,FN,VN,Précision,Rappel,F1,Benchmark
+LengthRatioFilter_2.0_TerminalPunctuationFilter_languages_fr_ar_CharacterScoreFilter_0.6_LanguageIDFilter_None,44,0,6,0,1.0,0.88,0.936,fr_ar_base
+LengthRatioFilter_2.0_TerminalPunctuationFilter_languages_fr_ar_CharacterScoreFilter_0.6_LanguageIDFilter_None,44,0,6,0,1.0,0.88,0.936,fr_ar_base_disaligned
+LengthRatioFilter_2.0_TerminalPunctuationFilter_languages_fr_ar_CharacterScoreFilter_0.6_LanguageIDFilter_None,1008,0,232,0,1.0,0.813,0.897,fr_ar
+LengthRatioFilter_3.0_TerminalPunctuationFilter_languages_ar_ar_TN,738,0,18,0,1.0,0.976,0.988,ar_ar_TN
+LengthRatioFilter_2.0_TerminalPunctuationFilter_languages_fr_ar_CharacterScoreFilter_0.6_LanguageIDFilter_None,737,0,503,0,1.0,0.594,0.746,fr_ar_disaligned
+LengthRatioFilter_3.0_TerminalPunctuationFilter_languages_ar_ar_TN,405,0,351,0,1.0,0.536,0.698,ar_ar_TN_disaligned
