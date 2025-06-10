@@ -67,46 +67,58 @@ def stringify_value(value):
 
 
 
-def generate_config( source_yaml: str,output_dir: str = "./data/settings_yaml/",
-                    filtered_dir: str = "./data/filtered",
-                    filters: Optional[Dict[str, Union[List, Dict]]] = None) -> None:
+def generate_config(source_yaml: str, output_dir: str = "./data/settings_yaml/",
+                   filtered_dir: str = "./data/filtered",
+                   filters: Optional[Dict[str, Union[List, Dict]]] = None,
+                   keep_base_filters: bool = False) -> None:
+    """Génère des configurations YAML pour OpusFilter
     
-    """Génération automatique des fichiers yaml avec les filtres d'opusfilters que l'on souhaite
-    
-     Args:
-        source_yaml (str): Chemin vers le fichier YAML de base.
-        output_dir (str): Dossier de sortie pour les fichiers générés.
-        filters (Dict[str, Union[List, Dict]], optional): Dictionnaire des filtres et de leurs paramètres.
+    Args:
+        source_yaml: Fichier YAML de base
+        output_dir: Dossier de sortie
+        filtered_dir: Dossier pour les résultats
+        filters: Dictionnaire des filtres à tester
+        keep_base_filters: Si True, conserve les filtres de base du YAML
     """
-
     if filters is None:
-        filters = {} 
-    
-    ## charge base configuration following a yaml syntax
+        filters = {}
+
     with open(source_yaml, 'r') as f:
         base_config = yaml.safe_load(f)
 
+    # Préparer les combinaisons de filtres
     filter_items = [(name, values if isinstance(values, list) else [values])
-                    for name, values in filters.items()]
-    
+                   for name, values in filters.items()]
     all_combinations = itertools.product(*[item[1] for item in filter_items])
 
     os.makedirs(output_dir, exist_ok=True)
 
     for combination in all_combinations:
         new_config = base_config.copy()
-        new_config['steps'][0]['parameters']['filters'] = []
-
         filter_name_parts = []
+        filter_list = []
 
+        ## building the list of the differents filters 
         for idx, (filter_type, _) in enumerate(filter_items):
             value = combination[idx]
             filter_name_parts.append(f"{filter_type}_{stringify_value(value)}")
 
-
-            ## Lengths filters
-            if filter_type == "LengthRatioFilter":
-                new_config['steps'][0]['parameters']['filters'].append({
+            
+            if filter_type == "WordAlignFilter":
+                filter_list.append({
+                    filter_type: {
+                        "src_threshold": value,
+                        "tgt_threshold": value,
+                        "src_tokenizer": ["moses", "fr"],
+                        "tgt_tokenizer": ["moses", "en"],
+                        "model": 1,
+                        "priors": "alignment.priors"
+                    }
+                })
+            
+            
+            elif filter_type == "LengthRatioFilter":
+                filter_list.append({
                     filter_type: {
                         "threshold": value,
                         "name": "word",
@@ -115,70 +127,58 @@ def generate_config( source_yaml: str,output_dir: str = "./data/settings_yaml/",
                 })
 
             elif filter_type == "LengthFilter":
-                new_config['steps'][0]['parameters']['filters'].append({
+                filter_list.append({
                     filter_type: {
                         "min_length": value,
                         "unit": "word",
                     }
                 })
 
-            ##Language ID filter
-
-            elif filter_type == "LanguageIDFilter":
-                 new_config['steps'][0]['parameters']['filters'].append({
-                    filter_type: {
-                        "languages": ["es", "fr"],       
-                            "id_method": "fasttext", ## fasttext library required       
-                            "thresholds": [0.7, 0.7], 
-                            "fasttext_model_path": "../models/lid.176.ftz"  
-                      
-                    }
-                })
-
             elif filter_type == "CharacterScoreFilter":
-               new_config['steps'][0]['parameters']['filters'].append({
+                 filter_list.append({
                     filter_type: {
                         "scripts": ["Latin", "Latin"],
                         "thresholds": [value, value]
                     }
-               })
-               
-               
-            elif filter_type == "WordAlignFilter":
-                new_config['steps'][0]['parameters']['filters'].append({
+                })
+            
+            elif filter_type == "TerminalPunctuationFilter":
+                filter_list.append({
                     filter_type: {
-                        "src_threshold": value,
-                        "tgt_threshold": value,
-                        "src_tokenizer": ["moses", "fr"], 
-                        "tgt_tokenizer": ["moses", "es"], 
-                        "model": 3  ## eflomal
+                        "languages": ["en", "fr"]
                     }
                 })
-
+            
+                    
+        for step in new_config['steps']:
+            if step['type'] == 'filter':
+            
+                if not keep_base_filters:
+                    step['parameters']['filters'] = []
+                
                
-
-            else:
-                new_config['steps'][0]['parameters']['filters'].append({
-                    filter_type: value if isinstance(value, dict) else {"threshold": value}
-                })
+                if filters:  
+                    step['parameters']['filters'].extend(filter_list)
+                
+                
+                if filters:
+                    step['parameters']['outputs'] = [
+                        f"en_{'_'.join(filter_name_parts)}.filtered.gz",
+                        f"fr_{'_'.join(filter_name_parts)}.filtered.gz"
+                    ]
+                else:
+                    
+                    step['parameters']['outputs'] = [
+                        "en.filtered.gz",
+                        "fr.filtered.gz"
+                    ]
 
         
-        filter_str = "_".join(filter_name_parts)
-
-        new_config['steps'][0]['parameters']['outputs'] = [
-            f"en_{filter_str}.filtered.gz",
-            f"fr_{filter_str}.filtered.gz"
-        ]
-
-        output_path = os.path.join(output_dir, f"config_{filter_str}.yaml")
-        new_config['common'] = {'output_directory': os.path.abspath(filtered_dir)}
-
+        output_path = os.path.join(output_dir, f"config_{'_'.join(filter_name_parts)}.yaml")
         with open(output_path, "w", encoding="utf-8") as f_out:
-            yaml.safe_dump(new_config, f_out, default_flow_style=False)
+            yaml.safe_dump(new_config, f_out, default_flow_style=False, sort_keys=False)
 
         print(f"Fichier généré : {output_path}")
-
-
 
 
 def run_opusfilter_on_configs(config_dir: str):
@@ -265,7 +265,7 @@ def log_rejected_pairs(original_pairs, filtered_pairs, base_name, output_dir, ma
 
     print(f"\n--- Paires rejetées pour la config : {base_name} ---")
     for i, (src, tgt) in enumerate(rejected_pairs[:max_display]):
-        print(f"[{i+1}] FR: {src} | ES: {tgt}")
+        print(f"[{i+1}] LANG_SRC: {src} | LANG_TARGET: {tgt}")
     print(f"Total rejetées : {len(rejected_pairs)}")
 
    
@@ -277,24 +277,36 @@ def log_rejected_pairs(original_pairs, filtered_pairs, base_name, output_dir, ma
 
 
 def main():
+
+    
+    
     PROJECT_ROOT = find_project_root()
-    es_path = os.path.join(PROJECT_ROOT, "data", "aligned", "spanish", "es.txt")
-    fr_path = os.path.join(PROJECT_ROOT, "data", "aligned", "spanish", "fr.txt")
+    target_path = os.path.join(PROJECT_ROOT, "data", "aligned", "english", "en.txt")
+    src_path = os.path.join(PROJECT_ROOT, "data", "aligned", "english", "fr.txt")
     source_yaml = os.path.join(PROJECT_ROOT, "data", "settings_yaml", "config.yaml")
     settings_dir = os.path.join(PROJECT_ROOT, "data", "settings_yaml")
     filtered_dir = os.path.join(PROJECT_ROOT, "data", "filtered")
 
 
-    original_pairs = load_data(es_path, fr_path)
+
+
+    original_pairs = load_data(src_path, target_path)
     filters_to_test = {
-        #‡"WordAlignFilter": [0.2],
-        "LengthRatioFilter": [1.8],
-        "CharacterScoreFilter": [0.9],
-        "TerminalPunctuationFilter": {"languages": ["es", "fr"]},
-        "LengthFilter": [2]
+        "WordAlignFilter": [0.1],
+        # "LengthRatioFilter": [1.8],
+        # "CharacterScoreFilter": [0.9],
+        # "TerminalPunctuationFilter": {"languages": ["en", "fr"]},
+        # "LengthFilter": [2]
     }
 
-    generate_config(source_yaml=source_yaml,output_dir=settings_dir,filtered_dir=filtered_dir,filters=filters_to_test)
+    generate_config(
+        source_yaml=source_yaml,
+        output_dir=settings_dir,
+        filtered_dir=filtered_dir,
+        filters=filters_to_test,
+        keep_base_filters=False  ##deactivate base filter 
+    )
+    
     run_opusfilter_on_configs(settings_dir)
     evaluate_filtered_data(original_pairs, filtered_dir)
 

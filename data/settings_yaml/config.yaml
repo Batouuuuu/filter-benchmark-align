@@ -1,18 +1,25 @@
 common:
   output_directory: ./data/filtered
 steps:
-- type: filter
-  parameters:
-    inputs:
-    - ../aligned/spanish/fr.txt        
-    - ../aligned/spanish/es.txt
-    outputs:
-    - fr.filtered.gz
-    - es.filtered.gz                                                         
-    filters:
-    - LengthRatioFilter:
-        unit: word
-        name: word
-        threshold: 1.5
+  
+  - type: train_alignment
+    parameters:
+      src_data: ../aligned/english/ELRC_2922.en-fr.fr
+      tgt_data: ../aligned/english/ELRC_2922.en-fr.en
+      output: alignment.priors
+      parameters: {}
+      
+
+  - type: filter
+    parameters:
+      inputs:
+      - ../aligned/english/fr.txt       
+      - ../aligned/english/en.txt
+      outputs:
+      - fr.filtered.gz
+      - es.filtered.gz                                                         
+      filters:
+      outputs: []  
+      filters: [] 
 
 
