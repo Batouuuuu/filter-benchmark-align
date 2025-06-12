@@ -69,19 +69,31 @@ async def create_files(file_src: Annotated[UploadFile, File()], file_target: Ann
         base_dir = Path(__file__).resolve().parent.parent.parent
         source_yaml = base_dir / "data" / "settings_yaml" / "config.yaml"
         output_dir = base_dir / "data" / "settings_yaml"
+        filtered_dir = base_dir / "data" / "filtered"
 
         generate_config(
-            
             source_yaml=str(source_yaml),
             output_dir=str(output_dir),
-            #filters={"WordAlignFilter": [0.2]},
             filters={"LengthRatioFilter": [1.8]}
         )
 
         run_opusfilter_on_configs(str(output_dir))
 
-        # evaluate_filtered_data(original_pairs, "../data/filtered/")
+        # Compter les phrases avant/après filtrage
+        initial_count = len(original_pairs)
+        
+        # Compter les phrases filtrées
+        filtered_files = list(filtered_dir.glob("*.filtered.gz"))
+        if filtered_files:
+            with gzip.open(filtered_files[0], 'rt', encoding='utf-8') as f:
+                filtered_count = sum(1 for _ in f)
+        else:
+            filtered_count = 0
 
-        return {"status": "Traitement terminé"}
-       
-
+        return {
+            "status": "success",
+            "initial_sentence_count": initial_count,
+            "filtered_sentence_count": filtered_count,
+            "rejected_count": initial_count - filtered_count,
+            "filter_used": "LengthRatioFilter (1.8)"
+        }

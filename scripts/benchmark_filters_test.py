@@ -287,11 +287,11 @@ def main():
 
     original_pairs = load_data(es_path, fr_path)
     filters_to_test = {
-        #‡"WordAlignFilter": [0.2],
-        "LengthRatioFilter": [1.8],
-        "CharacterScoreFilter": [0.9],
+        # "LengthRatioFilter": [1.8, 2.0],
+        "CharacterScoreFilter": [0.9, 1.2, 1.4],
         "TerminalPunctuationFilter": {"languages": ["es", "fr"]},
-        "LengthFilter": [2]
+        # "LengthFilter": [2],
+        # "LanguageIdFilter": ["es", "fr"]
     }
 
     generate_config(source_yaml=source_yaml,output_dir=settings_dir,filtered_dir=filtered_dir,filters=filters_to_test)
