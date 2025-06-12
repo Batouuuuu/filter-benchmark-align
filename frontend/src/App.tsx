@@ -8,26 +8,48 @@ export default function App() {
   const [fileFR, setFileFR] = useState<File | null>(null);
   const [fileEN, setFileEN] = useState<File | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [results, setResults] = useState<{
+    initial: number;
+    filtered: number;
+    rejected: number;
+    filter: string;
+  } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!fileFR || !fileEN) {
       alert("Thanks to select two files");
       return;
     }
+    
+    setIsLoading(true);
+    setShowModal(true);
+    
     const formData = new FormData();
     formData.append("file_src", fileFR);
     formData.append("file_target", fileEN);
 
-    for (const [key, value] of formData.entries()) {
-      console.log(key, value);
+    try {
+      const response = await fetch("http://localhost:8000/files", {
+        method: "POST",
+        body: formData,
+      });
+      
+      const data = await response.json();
+      if (data.status === "success") {
+        setResults({
+          initial: data.initial_sentence_count,
+          filtered: data.filtered_sentence_count,
+          rejected: data.rejected_count,
+          filter: data.filter_used,
+        });
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("An error occurred during processing");
+    } finally {
+      setIsLoading(false);
     }
-    // send to the backend
-    fetch("http://localhost:8000/files", {
-      method: "POST",
-      body: formData,
-    });
-
-    setShowModal(true);
   };
 
   // used for particles effect library
@@ -132,19 +154,83 @@ export default function App() {
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-[#d4d4d3] rounded-lg p-6 w-[90%] max-w-lg max-h-[90vh] text-center shadow-lg overflow-y-auto">
-            <h2 className="text-xl font-semibold mb-4">Analyse en cours</h2>
-            <p className="mb-4">
-              Nous comparons vos fichiers. Veuillez patienter...
-            </p>
-            <button
-              onClick={() => setShowModal(false)}
-              className="mt-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-            >
-              Fermer
-            </button>
+            {isLoading ? (
+              <>
+                <h2 className="text-xl font-semibold mb-4">Analyse en cours</h2>
+                <p className="mb-4">
+                  Nous comparons vos fichiers. Veuillez patienter...
+                </p>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto my-4"></div>
+              </>
+            ) : results ? (
+              <>
+                <h2 className="text-xl font-semibold mb-4">Résultats de l'analyse</h2>
+                
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="bg-white bg-opacity-20 p-4 rounded">
+                    <h3 className="font-medium">Phrases initiales</h3>
+                    <p className="text-2xl">{results.initial}</p>
+                  </div>
+                  <div className="bg-white bg-opacity-20 p-4 rounded">
+                    <h3 className="font-medium">Phrases conservées</h3>
+                    <p className="text-2xl text-green-500">{results.filtered}</p>
+                    <p className="text-sm">
+                      ({Math.round((results.filtered / results.initial) * 100)}%)
+                    </p>
+                  </div>
+                  <div className="bg-white bg-opacity-20 p-4 rounded">
+                    <h3 className="font-medium">Phrases rejetées</h3>
+                    <p className="text-2xl text-red-500">{results.rejected}</p>
+                    <p className="text-sm">
+                      ({Math.round((results.rejected / results.initial) * 100)}%)
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <h3 className="font-medium">Filtre appliqué</h3>
+                  <p className="text-sm bg-white bg-opacity-20 p-2 rounded">
+                    {results.filter}
+                  </p>
+                </div>
+                
+                <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+                  <div 
+                    className="bg-blue-600 h-4 rounded-full" 
+                    style={{
+                      width: `${(results.filtered / results.initial) * 100}%`
+                    }}
+                  ></div>
+                </div>
+                
+                <button
+                  onClick={() => {
+                    setShowModal(false);
+                    setResults(null);
+                  }}
+                  className="mt-4 px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                >
+                  Nouvelle analyse
+                </button>
+              </>
+            ) : (
+              <>
+                <h2 className="text-xl font-semibold mb-4">Erreur</h2>
+                <p className="mb-4">
+                  Une erreur est survenue lors du traitement.
+                </p>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="mt-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
+                >
+                  Fermer
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
     </div>
   );
 }
+

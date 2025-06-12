@@ -292,11 +292,11 @@ def main():
 
     original_pairs = load_data(src_path, target_path)
     filters_to_test = {
-        "WordAlignFilter": [0.1],
-        # "LengthRatioFilter": [1.8],
-        # "CharacterScoreFilter": [0.9],
-        # "TerminalPunctuationFilter": {"languages": ["en", "fr"]},
-        # "LengthFilter": [2]
+        # "LengthRatioFilter": [1.8, 2.0],
+        "CharacterScoreFilter": [0.9, 1.2, 1.4],
+        "TerminalPunctuationFilter": {"languages": ["es", "fr"]},
+        # "LengthFilter": [2],
+        # "LanguageIdFilter": ["es", "fr"]
     }
 
     generate_config(
